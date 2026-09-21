@@ -14,33 +14,7 @@ class Programm
             buf = Console.ReadLine();
         }
     }
-
-    static void PrintFloatBits(float value)
-    {
-        var bits = BitConverter.SingleToInt32Bits(value);
-
-        var binary = Convert.ToString(bits, 2).PadLeft(32, '0');
-        for (int i = 1; i < 64; i += 2)
-        {
-            binary = binary.Insert(i, ",");
-        }
-        
-        Console.WriteLine(binary);
-    }
-
-    static void PrintDoubleBits(double value)
-    {
-        var bits = BitConverter.DoubleToInt64Bits(value);
-
-        var binary = Convert.ToString(bits, 2).PadLeft(64, '0');
-
-        for (int i = 1; i < 128; i += 2)
-        {
-            binary = binary.Insert(i, ",");
-        }
-        Console.WriteLine(binary);
-    }
-
+    
     private static void Task1()
     {
         Input("Enter n: ", out int n);
