@@ -1,8 +1,7 @@
 ﻿namespace oop;
 
 class Programm
-{
-    // TODO: вынести в другой проект для последующих импортов
+{ 
     private static void Input<T>(string message, out T data) where T : IParsable<T> 
     {
         Console.WriteLine(message);

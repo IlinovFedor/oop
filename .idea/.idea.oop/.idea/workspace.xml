@@ -5,11 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1c6ad44e-18d4-43ab-a89f-adfaac4affe4" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/oop.sln" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/oop/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/lab01/Program.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/oop/lab1.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/lab01/lab01.xlsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/oop/oop.csproj" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.oop/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.oop/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -103,7 +99,8 @@
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="lab1" />
-    <option name="LAST_COMMIT_MESSAGE" value="lab1" />
+    <MESSAGE value="порядок структуры репозитория" />
+    <option name="LAST_COMMIT_MESSAGE" value="порядок структуры репозитория" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
