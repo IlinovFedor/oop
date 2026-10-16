@@ -1,9 +1,45 @@
 namespace oop;
 
-
-class Menu(params KeyValuePair<string, Action>[] actions)
+enum Context
 {
-    public void Show()
+    Nil,
+    Array,
+    RuggedArray
+}
+
+class Error(Error.Type _type)
+{
+    public enum Type
+    {
+        Nil,
+        OutOfRange,
+        WrongSize
+    }
+
+    public Type GetType()
+    {
+        return _type;
+    }
+
+    public string String()
+    {
+        switch (_type)
+        {
+            case Type.Nil:
+                return "Nil";
+            case Type.OutOfRange:
+                return "Index out of range";
+            case Type.WrongSize:
+                return "Wrong size";
+            default:
+                return "Unexpected error";
+        }
+    }
+}
+
+class Menu(params KeyValuePair<string, Action<Context>>[] actions)
+{
+    public void Show(Context ctx)
     {
         int command = 0;
         do
@@ -14,7 +50,7 @@ class Menu(params KeyValuePair<string, Action>[] actions)
 
             Inputer.Input(out command);
             if (1 <= command && command <= actions.GetLength(0))
-                actions[command - 1].Value();
+                actions[command - 1].Value(ctx);
             else if (command != 0)
                 Console.WriteLine("Unknown command");
         } while (command != 0);
@@ -23,6 +59,122 @@ class Menu(params KeyValuePair<string, Action>[] actions)
 
 static class Inputer
 {
+    public static void ShowMainMenu(Context ctx)
+    {
+        var menu = new Menu(
+            new KeyValuePair<string, Action<Context>>("Task 5.1 (5)", ShowMenuT5),
+            new KeyValuePair<string, Action<Context>>("Task 5.2 (6)", (ctx) => Console.WriteLine("таск 6"))
+        );
+        menu.Show(Context.Nil);
+    }
+
+    private static void ShowMenuT5(Context ctx)
+    {
+        var menu = new Menu(
+            new KeyValuePair<string, Action<Context>>("Two-dimensional array", ShowMenuT5S1),
+            new KeyValuePair<string, Action<Context>>("Jagged array", (ctx) => Console.WriteLine("Рваный массив"))
+        );
+        menu.Show(ctx);
+    }
+
+    private static void ShowMenuT5S1(Context ctx)
+    {
+        var menu = new Menu(
+            new KeyValuePair<string, Action<Context>>("Create array", ShowMenuCreateArray),
+            new KeyValuePair<string, Action<Context>>("Print array", PrintArray),
+            new KeyValuePair<string, Action<Context>>("Delete row with number K", DeleteK),
+            new KeyValuePair<string, Action<Context>>("Add K rows starting from number N", AddKRows)
+        );
+        menu.Show(ctx);
+    }
+
+    private static void ShowMenuCreateArray(Context ctx)
+    {
+        var menu = new Menu(
+            new KeyValuePair<string, Action<Context>>("Enter array from keyboard", ReadArray2D),
+            new KeyValuePair<string, Action<Context>>("Generate random values", CreateArrayFromRnd)
+        );
+        menu.Show(ctx);
+    }
+
+    private static void ReadArray2D(Context ctx)
+    {
+        Input2DSize(out var rowsCnt, out var columnsCnt);
+
+        var inputArr = new int[rowsCnt, columnsCnt];
+        for (int i = 0; i < rowsCnt; i++)
+        {
+            var row = EnterIntRow(i, columnsCnt);
+            for (int j = 0; j < columnsCnt; j++)
+                inputArr[i, j] = row[j];
+        }
+
+        T5S1.SetArray(inputArr);
+    }
+
+    private static void CreateArrayFromRnd(Context ctx)
+    {
+        Input2DSize(out var rowsCnt, out var columnsCnt);
+
+        var newArr = new int[rowsCnt, columnsCnt];
+
+        Random rnd = new Random();
+        for (int i = 0; i < newArr.GetLength(0); i++)
+        for (int j = 0; j < newArr.GetLength(1); j++)
+            newArr[i, j] = rnd.Next(1, 10);
+
+        T5S1.SetArray(newArr);
+    }
+
+    private static void DeleteK(Context ctx)
+    {
+        Console.WriteLine("Enter K:");
+        Input(out int k);
+        var err = T5S1.DeleteK(k - 1);
+        if (err.GetType() != Error.Type.Nil)
+            Console.WriteLine(err.String());
+    }
+
+    private static void PrintArray(Context ctx)
+    {
+        var arr = T5S1.GetArray();
+        var rowsCnt = arr.GetLength(0);
+        var columnsCnt = arr.GetLength(1);
+        if (rowsCnt == 0 || columnsCnt == 0)
+        {
+            Console.WriteLine("Array is empty");
+            return;
+        }
+
+        for (int i = 0; i < rowsCnt; i++)
+        {
+            for (int j = 0; j < columnsCnt; j++)
+                Console.Write($"{arr[i, j]} ");
+            Console.Write("\n");
+        }
+    }
+
+    private static void AddKRows(Context ctx)
+    {
+        Console.WriteLine("Enter K:");
+        Input(out int k);
+        Console.WriteLine("Enter N:");
+        Input(out int n);
+
+        var colCnt = T5S1.GetArray().GetLength(1);
+        var arr = new int[n, colCnt];
+        for (int i = 0; i < n; i++)
+        {
+            var row = EnterIntRow(i, colCnt);
+            for (int j = 0; j < colCnt; j++)
+                arr[i, j] = row[i];
+        }
+
+        var err = T5S1.AddKRows(k, n, arr);
+        if (err.GetType() != Error.Type.Nil)
+            Console.WriteLine(err.String());
+    }
+
     public static void Input<T>(out T data) where T : IParsable<T>
     {
         var buf = Console.ReadLine();
@@ -32,18 +184,6 @@ static class Inputer
             Console.WriteLine("Format error. Try again :(");
             buf = Console.ReadLine();
         }
-    }
-
-    public static int InputIntWithRange(string name, int min, int max)
-    {
-        int n = 0;
-        while (! (min <= n && n < max))
-        {
-            Console.WriteLine($"{name} ({min} <= K < {max}): ");
-            Input(out n);
-        }
-
-        return n;
     }
 
     public static void Input2DSize(out int rowsCnt, out int columnsCnt)
@@ -93,6 +233,7 @@ static class Inputer
                     ok = false;
                     break;
                 }
+
                 ok = true;
             }
         } while (!ok);
@@ -105,101 +246,31 @@ class Programm
 {
     private static void Main()
     {
-        var menu = new Menu(
-            new KeyValuePair<string, Action>("Task 5.1 (5)", Task5.MenuTask5),
-            new KeyValuePair<string, Action>("Task 5.2 (6)", () => Console.WriteLine("таск 6"))
-        );
-        menu.Show();
+        Inputer.ShowMainMenu(Context.Nil);
     }
 }
 
-static class Task5
+static class T5S1
 {
     private static int[,] _arr = new int[,] { };
 
-    public static void MenuTask5()
+    public static void SetArray(int[,] arr)
     {
-        var menu = new Menu(
-            new KeyValuePair<string, Action>("Two-dimensional array", MenuTask5Subtask1),
-            new KeyValuePair<string, Action>("Jagged array", () => Console.WriteLine("Рваный массив"))
-        );
-        menu.Show();
+        _arr = arr;
     }
 
-    private static void MenuTask5Subtask1()
+    public static int[,] GetArray()
     {
-        var menu = new Menu(
-            new KeyValuePair<string, Action>("Create array", MenCreateArray),
-            new KeyValuePair<string, Action>("Print array", Print),
-            new KeyValuePair<string, Action>("Delete row with number K", DeleteK),
-            new KeyValuePair<string, Action>("Add K rows starting from number N", AddKRows)
-        );
-        menu.Show();
+        return _arr;
     }
 
-    private static void MenCreateArray()
-    {
-        var menu = new Menu(
-            new KeyValuePair<string, Action>("Enter array from keyboard", InputArray2DFromConsole),
-            new KeyValuePair<string, Action>("Generate random values", CreateArrayFromRnd)
-        );
-        menu.Show();
-    }
-
-    private static void InputArray2DFromConsole()
-    {
-        Inputer.Input2DSize(out var rowsCnt, out var columnsCnt);
-
-        var inputArr = new int[rowsCnt, columnsCnt];
-        for (int i = 0; i < rowsCnt; i++)
-        {
-            var row = Inputer.EnterIntRow(i, columnsCnt);
-            for (int j = 0; j < columnsCnt; j++)
-                inputArr[i, j] = row[j];
-
-        }
-
-        _arr = inputArr;
-    }
-
-    private static void CreateArrayFromRnd()
-    {
-        Inputer.Input2DSize(out var rowsCnt, out var columnsCnt);
-
-        _arr = new int[rowsCnt, columnsCnt];
-
-        Random rnd = new Random();
-        for (int i = 0; i < _arr.GetLength(0); i++)
-        for (int j = 0; j < _arr.GetLength(1); j++)
-            _arr[i, j] = rnd.Next(1, 10);
-    }
-
-    private static void Print()
-    {
-        var rowsCnt = _arr.GetLength(0);
-        var columnsCnt = _arr.GetLength(1);
-        if (rowsCnt == 0 || columnsCnt == 0)
-        {
-            Console.WriteLine("Array is empty");
-        }
-
-        for (int i = 0; i < rowsCnt; i++)
-        {
-            for (int j = 0; j < columnsCnt; j++)
-                Console.Write($"{_arr[i, j]} ");
-            Console.Write("\n");
-        }
-    }
-
-    private static void DeleteK()
+    public static Error DeleteK(int k)
     {
         if (_arr.GetLength(0) == 0 || _arr.GetLength(1) == 0)
-        {
-            Console.WriteLine("Array is empty");
-            return;
-        }
+            return new Error(Error.Type.OutOfRange);
+        if (!(0 <= k && k < _arr.GetLength(0)))
+            return new Error(Error.Type.OutOfRange);
 
-        var k = Inputer.InputIntWithRange("K", 1, _arr.GetLength(0) + 1);
 
         var newArr = new int[_arr.GetLength(0) - 1, _arr.GetLength(1)];
         var newRowIdx = 0;
@@ -213,13 +284,17 @@ static class Task5
         }
 
         _arr = newArr;
+        return new Error(Error.Type.Nil);
     }
 
-    private static void AddKRows()
+    public static Error AddKRows(int k, int n, int[,] rows)
     {
-        var k = Inputer.InputIntWithRange("K", 1, _arr.GetLength(0) + 1);
-        var n = Inputer.InputIntWithRange("N", 1, _arr.GetLength(0) + 1);
-        
+        if (!(0 <= k && k < _arr.GetLength(0)))
+            return new Error(Error.Type.OutOfRange);
+        if (rows.GetLength(1) != _arr.GetLength(1))
+            return new Error(Error.Type.WrongSize);
+
+
         var newArr = new int[_arr.GetLength(0) + k, _arr.GetLength(1)];
         var curIdx = 0;
         for (int i = 0; i < newArr.GetLength(0); i++)
@@ -231,15 +306,17 @@ static class Task5
                 newArr[i, j] = _arr[curIdx, j];
             curIdx++;
         }
-        
+
+        var newRowIdx = 0;
         for (int j = 0; j < k; j++)
         {
-            var newRow = Inputer.EnterIntRow(j, _arr.GetLength(1));
             for (int l = 0; l < newArr.GetLength(1); l++)
-                newArr[n + j - 1, l] = newRow[l];
+                newArr[n + j - 1, l] = rows[newRowIdx, l];
+            newRowIdx++;
         }
 
         _arr = newArr;
+        return new Error(Error.Type.Nil);
     }
 }
 
