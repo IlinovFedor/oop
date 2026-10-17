@@ -43,9 +43,9 @@ class Programm
             }
 
             Console.WriteLine($"X={x:F1}\t" +
-                              $"SN={sn}\t" +
+                              $"SN={sn:F4}\t" +
                               $"SE={se:F4}\t" +
-                              $"Y={realY}\t" +
+                              $"Y={realY:F4}\t" +
                               $"dN={realY - sn:F15}\t" +
                               $"dE={realY - se:F15}\t");
         }
