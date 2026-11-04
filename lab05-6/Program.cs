@@ -1,86 +1,231 @@
+using System.Text.RegularExpressions;
+
 namespace oop;
 
-class Programm
+public class Program
 {
     private static void Main()
     {
-        var _task5 = new _task5();
-        var _task6 = new _task6();
-        var inputer = new Inputer(_task5, _task6);
-        
+        var task5 = new Task5();
+        var task6 = new Task6();
+        var inputer = new Inputer(task5, task6);
+
         inputer.ShowMenuMain();
     }
 }
 
-class Error(Error.Type value)
+public class Error(Error.Type value)
 {
     public enum Type
     {
         Ok,
         OutOfRange,
         WrongSize,
-        Empty
+        EmptyArray,
+        EmptyText
     }
 
     public Type Value = value;
 
-    public string String()
+    public string GetMessage()
     {
         switch (Value)
         {
             case Type.Ok:
-                return "Nil";
+                return "No error";
             case Type.OutOfRange:
                 return "Index out of range";
             case Type.WrongSize:
                 return "Wrong size";
-            case Type.Empty:
+            case Type.EmptyArray:
                 return "Array is empty";
+            case Type.EmptyText:
+                return "String is empty";
             default:
                 return "Unexpected error";
         }
     }
 }
 
-class Menu(params KeyValuePair<string, Action>[] actions)
+public class Menu(params KeyValuePair<string, Action>[] actions)
 {
     public void Show()
     {
-        int command = 0;
+        int command;
         do
         {
-            for (int i = 0; i < actions.GetLength(0); i++)
+            for (int i = 0; i < actions.Length; i++)
                 Console.WriteLine($"{i + 1}. {actions[i].Key}");
             Console.WriteLine("0. Back");
 
             Inputer.Input(out command);
-            if (1 <= command && command <= actions.GetLength(0))
+            if (1 <= command && command <= actions.Length)
+            {
                 try
                 {
                     actions[command - 1].Value();
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("\nUnexpected error");
-                    Console.WriteLine(e);
+                    Console.WriteLine($"\nUnexpected error: {e.Message}");
                 }
+            }
             else if (command != 0)
+            {
                 Console.WriteLine("Unknown command");
+            }
         } while (command != 0);
     }
 }
 
-class Inputer(_task5 task5, _task6 task6)
+public class Inputer(Task5 task5, Task6 task6)
 {
-    private _task5 _task5 = task5;
-    private _task6 _task6 = task6;
+    private static readonly string[] TestStrings =
+    [
+        "В лесу родилась елочка! В лесу она росла. Зимой и летом стройная, зеленая была!",
+        "Цена 3.5 рубля. Мы   купили хлеб;  молоко: сыр. Вы пойдете гулять? Да!",
+        "Первое предложение. Второе предложение!",
+        "Одно предложение без точки",
+        ""
+    ];
+
+    private string _text6 = string.Empty;
 
     public void ShowMenuMain()
     {
         new Menu(
             new KeyValuePair<string, Action>("Task 5.1 (5)", ActionMenuT5),
-            new KeyValuePair<string, Action>("Task 5.2 (6)", () => Console.WriteLine("таск 6"))
+            new KeyValuePair<string, Action>("Task 5.2 (6)", ShowMenuTask6)
         ).Show();
+    }
+
+    public static void Input<T>(out T data) where T : IParsable<T>
+    {
+        while (true)
+        {
+            var buf = Console.ReadLine();
+            if (T.TryParse(buf, null, out var parsed))
+            {
+                data = parsed;
+                return;
+            }
+
+            Console.WriteLine("Invalid input. Try again :(");
+        }
+    }
+
+    private static int ReadInt(string prompt, int min = 1, int max = int.MaxValue)
+    {
+        while (true)
+        {
+            Console.WriteLine(prompt);
+            Input(out int value);
+            if (min <= value && value <= max)
+                return value;
+
+            Console.WriteLine("Value is out of range. Try again.");
+        }
+    }
+
+    private static void FillRandom(int[,] matrix)
+    {
+        for (int i = 0; i < matrix.GetLength(0); i++)
+        {
+            for (int j = 0; j < matrix.GetLength(1); j++)
+                matrix[i, j] = Random.Shared.Next(1, 10);
+        }
+    }
+
+    private static void FillRandom(int[] row)
+    {
+        for (int i = 0; i < row.Length; i++)
+            row[i] = Random.Shared.Next(1, 10);
+    }
+
+    private static void PrintArray(int[,] matrix)
+    {
+        Console.WriteLine("=======  ARRAY =======");
+
+        int rowCount = matrix.GetLength(0);
+        if (rowCount == 0)
+        {
+            Console.WriteLine("Array is empty");
+        }
+
+        for (int i = 0; i < rowCount; i++)
+        {
+            Console.Write($"{i + 1}: ");
+            for (int j = 0; j < matrix.GetLength(1); j++)
+                Console.Write($"{matrix[i, j]} ");
+            Console.WriteLine();
+        }
+
+        Console.WriteLine("=======  ARRAY =======");
+    }
+
+    private static void PrintArray(int[][] rows)
+    {
+        Console.WriteLine("==== RAGGED ARRAY ====");
+
+        if (rows.Length == 0)
+        {
+            Console.WriteLine("Array is empty");
+        }
+
+        for (int i = 0; i < rows.Length; i++)
+        {
+            Console.Write($"{i + 1}: ");
+            for (int j = 0; j < rows[i].Length; j++)
+                Console.Write($"{rows[i][j]} ");
+            Console.WriteLine();
+        }
+
+        Console.WriteLine("==== RAGGED ARRAY ====");
+    }
+
+    private void ShowMenuTask6()
+    {
+        new Menu(
+            new KeyValuePair<string, Action>("Enter text from keyboard", ActionReadText),
+            new KeyValuePair<string, Action>("Choose test string", ActionChooseTestString),
+            new KeyValuePair<string, Action>("Remove first and last sentence", ActionExecuteTask)
+        ).Show();
+    }
+
+    private void ActionReadText()
+    {
+        Console.WriteLine("Enter text:");
+        _text6 = Console.ReadLine();
+    }
+
+    private void ActionChooseTestString()
+    {
+        for (int i = 0; i < TestStrings.Length; i++)
+            Console.WriteLine($"{i + 1}. \"{TestStrings[i]}\"");
+
+        var number = ReadInt($"Choose test string (1-{TestStrings.Length}):", 1, TestStrings.Length);
+        _text6 = TestStrings[number - 1];
+    }
+
+    private void ActionExecuteTask()
+    {
+        var result = _text6;
+        var err = task6.RemoveFirstAndLastSentence(ref result);
+        if (err.Value != Error.Type.Ok)
+        {
+            Console.WriteLine(err.GetMessage());
+            return;
+        }
+
+        Console.WriteLine($"Source: \"{_text6}\"");
+        _text6 = result;
+        if (result.Length == 0)
+        {
+            Console.WriteLine("Result: string is empty (there were less than 3 sentences)");
+            return;
+        }
+
+        Console.WriteLine($"Result: \"{result}\"");
     }
 
     private void ActionMenuT5()
@@ -95,7 +240,7 @@ class Inputer(_task5 task5, _task6 task6)
     {
         new Menu(
             new KeyValuePair<string, Action>("Create array", ActionMenuCreateArray),
-            new KeyValuePair<string, Action>("Print array", ActionPrintArray),
+            new KeyValuePair<string, Action>("Print array", () => PrintArray(task5.Matrix)),
             new KeyValuePair<string, Action>("Delete row with number K", ActionDeleteK)
         ).Show();
     }
@@ -111,53 +256,53 @@ class Inputer(_task5 task5, _task6 task6)
     private void ActionReadArray()
     {
         Input2DSize(out var rowsCnt, out var colCnt);
-        var arr = new int[rowsCnt, colCnt];
+        var matrix = new int[rowsCnt, colCnt];
         for (int i = 0; i < rowsCnt; i++)
         {
             var row = EnterRowOfSize(i, colCnt);
             for (int j = 0; j < colCnt; j++)
-                arr[i, j] = row[j];
+                matrix[i, j] = row[j];
         }
 
-        _task5.Array = arr;
-        ActionPrintArray();
+        task5.Matrix = matrix;
+        PrintArray(task5.Matrix);
     }
 
     private void ActionCreateArrayFromRnd()
     {
-        Random rnd = new Random();
         Input2DSize(out var rowsCnt, out var colCnt);
-        var arr = new int[rowsCnt, colCnt];
-        for (int i = 0; i < arr.GetLength(0); i++)
-        {
-            var len = arr.GetLength(1);
-            for (int j = 0; j < len; j++)
-                arr[i, j] = rnd.Next(1, 10);
-        }
+        var matrix = new int[rowsCnt, colCnt];
+        FillRandom(matrix);
 
-        _task5.Array = arr;
-        ActionPrintArray();
+        task5.Matrix = matrix;
+        PrintArray(task5.Matrix);
     }
 
     private void ActionDeleteK()
     {
-        Console.WriteLine("Enter K:");
-        Input(out int k);
-        var err = _task5.DeleteK(k - 1);
-        if (err.Value != Error.Type.Ok)
+        if (task5.Matrix.GetLength(0) == 0)
         {
-            Console.WriteLine(err.String());
+            Console.WriteLine(new Error(Error.Type.EmptyArray).GetMessage());
             return;
         }
 
-        ActionPrintArray();
+        Console.WriteLine("Enter K:");
+        Input(out int k);
+        var err = task5.DeleteK(k);
+        if (err.Value != Error.Type.Ok)
+        {
+            Console.WriteLine(err.GetMessage());
+            return;
+        }
+
+        PrintArray(task5.Matrix);
     }
 
     private void ActionMenuRagArray()
     {
         new Menu(
             new KeyValuePair<string, Action>("Create array", ShowMenuCreateRagArray),
-            new KeyValuePair<string, Action>("Print array", ActionPrintRagArray),
+            new KeyValuePair<string, Action>("Print array", () => PrintArray(task5.JaggedArray)),
             new KeyValuePair<string, Action>("Add K rows starting from number N", ActionAddKRows)
         ).Show();
     }
@@ -172,78 +317,53 @@ class Inputer(_task5 task5, _task6 task6)
 
     private void ActionReadRagArray()
     {
-        int rowsCnt = 0;
-        while (rowsCnt < 1)
-        {
-            Console.WriteLine("Enter amount of rows");
-            Input(out rowsCnt);
-        }
-
-        var arr = new int[rowsCnt][];
-
+        var rowsCnt = ReadInt("Enter amount of rows (at least 1):");
+        var rows = new int[rowsCnt][];
         for (int i = 0; i < rowsCnt; i++)
-        {
-            var row = EnterIntRow(i);
-            arr[i] = row;
-        }
+            rows[i] = EnterIntRow(i);
 
-        _task5.JaggedArray = arr;
-        ActionPrintRagArray();
+        task5.JaggedArray = rows;
+        PrintArray(task5.JaggedArray);
     }
 
     private void ActionCreateRagArrayFromRnd()
     {
-        Random rnd = new Random();
-        var rowsCnt = rnd.Next(2, 10);
-        var arr = new int[rowsCnt][];
-
-        for (int i = 0; i < arr.GetLength(0); i++)
+        var rowsCnt = Random.Shared.Next(2, 10);
+        var rows = new int[rowsCnt][];
+        for (int i = 0; i < rowsCnt; i++)
         {
-            var len = rnd.Next(2, 10);
-            arr[i] = new int[len];
-            for (int j = 0; j < len; j++)
-                arr[i][j] = rnd.Next(1, 10);
+            rows[i] = new int[Random.Shared.Next(2, 10)];
+            FillRandom(rows[i]);
         }
 
-        _task5.JaggedArray = arr;
-        ActionPrintRagArray();
+        task5.JaggedArray = rows;
+        PrintArray(task5.JaggedArray);
     }
-
 
     private void ActionAddKRows()
     {
-        int cntRow = _task5.JaggedArray.Length;
+        int rowCount = task5.JaggedArray.Length;
+        var n = ReadInt($"Enter N (1-{rowCount + 1}):", 1, rowCount + 1);
+        var k = ReadInt("Enter K (at least 1):");
 
-        int n = 0;
-        while (!(0 < n && n < cntRow + 2))
-        {
-            Console.WriteLine($"Enter N. It must be greater than 0 and less than {cntRow + 2}: ");
-            Input(out n);
-        }
-
-        int k = 0;
-        while (k < 1)
-        {
-            Console.WriteLine("Enter K. It musts be greater than 0");
-            Input(out k);
-        }
-
-        var jagArr = new int[k][];
-
+        var newRows = new int[k][];
         for (int i = 0; i < k; i++)
-        {
-            var row = EnterIntRow(i);
-            jagArr[i] = row;
-        }
+            newRows[i] = EnterIntRow(i);
 
-        var err = _task5.AddKRows(n - 1, jagArr);
+        var err = task5.AddKRows(n - 1, newRows);
         if (err.Value != Error.Type.Ok)
         {
-            Console.WriteLine(err.String());
+            Console.WriteLine(err.GetMessage());
             return;
         }
 
-        ActionPrintRagArray();
+        PrintArray(task5.JaggedArray);
+    }
+
+    private void Input2DSize(out int rowsCnt, out int colCnt)
+    {
+        rowsCnt = ReadInt("Amount of rows (at least 1):");
+        colCnt = ReadInt("Amount of columns (at least 1):");
     }
 
     private int[] EnterRowOfSize(int rowIdx, int colCnt)
@@ -258,182 +378,102 @@ class Inputer(_task5 task5, _task6 task6)
         }
     }
 
-    private void ActionPrintArray()
-    {
-        Console.WriteLine("=======  ARRAY =======");
-
-        var arr = _task5.Array;
-        int rowsCnt = 0;
-        rowsCnt = arr.GetLength(0);
-        if (rowsCnt == 0)
-        {
-            Console.WriteLine("Array is empty");
-            return;
-        }
-
-        for (int i = 0; i < rowsCnt; i++)
-        {
-            Console.Write($"{i + 1}: ");
-            for (int j = 0; j < arr.GetLength(1); j++)
-                Console.Write($"{arr[i, j]} ");
-            Console.Write("\n");
-        }
-
-        Console.WriteLine("=======  ARRAY =======");
-    }
-
-    private void ActionPrintRagArray()
-    {
-        Console.WriteLine("==== RAGGED ARRAY ====");
-
-        var arr = _task5.JaggedArray;
-        int rowsCnt = arr.Length;
-        if (rowsCnt == 0)
-        {
-            Console.WriteLine("Array is empty");
-            return;
-        }
-
-        for (int i = 0; i < rowsCnt; i++)
-        {
-            Console.Write($"{i + 1}: ");
-            for (int j = 0; j < arr[i].Length; j++)
-                Console.Write($"{arr[i][j]} ");
-            Console.Write("\n");
-        }
-
-        Console.WriteLine("==== RAGGED ARRAY ====");
-    }
-
-    public static void Input<T>(out T data) where T : IParsable<T>
-    {
-        var buf = Console.ReadLine();
-
-        while (!T.TryParse(buf, null, out data))
-        {
-            Console.WriteLine("Cannot format result. Try again :(");
-            buf = Console.ReadLine();
-        }
-    }
-
-    private void Input2DSize(out int rowsCnt, out int colCnt)
-    {
-        rowsCnt = 0;
-        colCnt = 0;
-        while (rowsCnt < 1)
-        {
-            Console.WriteLine("Amount of rows. It musts be greater than 0:");
-            Input(out rowsCnt);
-        }
-
-        while (colCnt < 1)
-        {
-            Console.WriteLine("Amount of columns. It musts be greater than 0: ");
-            Input(out colCnt);
-        }
-    }
-
     private int[] EnterIntRow(int rowIdx)
     {
         while (true)
         {
             Console.WriteLine($"Enter {rowIdx + 1} line. Space is separator");
-            var str = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(str)) continue;
+            var line = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                Console.WriteLine("Line is empty. Try again.");
+                continue;
+            }
 
-            var nums = str.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var arr = new int[nums.Length];
-            bool ok = true;
+            var nums = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var row = new int[nums.Length];
+            var isParsed = true;
 
             for (int j = 0; j < nums.Length; j++)
             {
-                if (!int.TryParse(nums[j], out arr[j]))
+                if (!int.TryParse(nums[j], out row[j]))
                 {
                     Console.WriteLine($"Cannot read element with number {j + 1}. Try again.");
-                    ok = false;
+                    isParsed = false;
                     break;
                 }
             }
 
-            if (ok) return arr;
+            if (isParsed)
+                return row;
         }
     }
 }
 
-class _task5
+public class Task5
 {
-    public int[,] Array = new int[,] { };
+    public int[,] Matrix = new int[0, 0];
+
     public int[][] JaggedArray = [];
 
     public Error DeleteK(int k)
     {
-        int rowCnt = Array.GetLength(0);
+        int idx = k - 1;
+        int rowCnt = Matrix.GetLength(0);
+        int colCnt = Matrix.GetLength(1);
 
         if (rowCnt == 0)
-            return new Error(Error.Type.Empty);
-        if (!(0 <= k && k < rowCnt))
+            return new Error(Error.Type.EmptyArray);
+        if (!(0 <= idx && idx < rowCnt))
             return new Error(Error.Type.OutOfRange);
 
+        var result = new int[rowCnt - 1, colCnt];
+        Array.Copy(Matrix, 0, result, 0, idx * colCnt);
+        Array.Copy(Matrix, (idx + 1) * colCnt, result, idx * colCnt, (rowCnt - idx - 1) * colCnt);
 
-        var arr = new int[rowCnt - 1, Array.GetLength(1)];
-        var newRowIdx = 0;
-        for (int i = 0; i < rowCnt; i++)
-        {
-            if (i == k)
-                continue;
-
-            for (int j = 0; j < Array.GetLength(1); j++)
-                arr[newRowIdx, j] = Array[i, j];
-            newRowIdx++;
-        }
-
-        Array = arr;
+        Matrix = result;
         return new Error(Error.Type.Ok);
     }
 
-    public Error AddKRows(int index, int[][] jagRows)
+    public Error AddKRows(int index, int[][] newRows)
     {
-        var rowsCnt = jagRows.Length;
         if (!(0 <= index && index <= JaggedArray.Length))
             return new Error(Error.Type.OutOfRange);
+        if (newRows.Length == 0)
+            return new Error(Error.Type.WrongSize);
 
-        int newRowCnt = JaggedArray.Length + rowsCnt;
+        var result = new int[JaggedArray.Length + newRows.Length][];
+        Array.Copy(JaggedArray, 0, result, 0, index);
+        Array.Copy(newRows, 0, result, index, newRows.Length);
+        Array.Copy(JaggedArray, index, result, index + newRows.Length, JaggedArray.Length - index);
 
-        var jagArr = new int[newRowCnt][];
-        int curIdx = 0;
-
-        for (int i = 0; i < newRowCnt; i++)
-        {
-            if (index <= i && i < index + rowsCnt)
-                jagArr[i] = jagRows[i - index];
-            else
-                jagArr[i] = JaggedArray[curIdx++];
-        }
-
-        JaggedArray = jagArr;
+        JaggedArray = result;
         return new Error(Error.Type.Ok);
     }
 }
 
-class _task6
+public class Task6
 {
+    private static readonly Regex SentencePattern = new(@"\S.*?(?:[.!?](?=\s|$)|$)");
+
+    public Error RemoveFirstAndLastSentence(ref string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return new Error(Error.Type.EmptyText);
+
+        var trimmed = text.Trim();
+        var sentences = SentencePattern.Matches(trimmed);
+        if (sentences.Count < 3)
+        {
+            text = string.Empty;
+            return new Error(Error.Type.Ok);
+        }
+
+        var result = "";
+        for (int i = 1; i < sentences.Count - 1; i++)
+            result += sentences[i].Value + " ";
+
+        text = result.Trim();
+        return new Error(Error.Type.Ok);
+    }
 }
-
-/*
-1
-1
-1
-2
-4
-5
-0
-2
-4
-3
-2
-0 0 0 0 0
-1 1 1 1 1
-2 2 2 2 2
-2
-
-*/
